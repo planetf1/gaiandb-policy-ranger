@@ -7,7 +7,9 @@
     <version>0.1-SNAPSHOT</version>
     <name>gaiandb-policy-ranger</name>
     <url>http://maven.apache.org</url>
-    
+    <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
     <dependencies>
       <dependency>
         <!-- The gaianDB jar is taken from the latest distribution  -->
