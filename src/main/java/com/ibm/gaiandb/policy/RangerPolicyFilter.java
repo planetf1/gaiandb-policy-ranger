@@ -54,6 +54,7 @@ public class RangerPolicyFilter extends SQLResultFilterX {
 	 */
 	public RangerPolicyFilter() {
 		logger.logDetail("\nEntered SamplePolicyNoFilters() constructor");
+		System.out.println("\nEntered SamplePolicyNoFilters() constructor **LOOK!!!**");
 	}
 	
 	public boolean setLogicalTable(String logicalTableName, ResultSetMetaData logicalTableResultSetMetaData) {

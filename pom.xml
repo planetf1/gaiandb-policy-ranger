@@ -22,7 +22,7 @@
       </dependency>
       <dependency>
         <!-- The derby jar is taken from the latest distribution      -->
-        <!-- (version unknown).                                       -->
+        <!-- 10.8.3.1.                                       -->
         <!-- will verify if can be taken from live maven repo instead -->
         <groupId>gaiandb</groupId>
         <artifactId>com.apache.derby</artifactId>
