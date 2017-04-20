@@ -1,8 +1,17 @@
 /*
- * (C) Copyright IBM Corp. 2014
+ * (C) Copyright IBM Corp. 2017
  *
- * LICENSE: Eclipse Public License v1.0
- * http://www.eclipse.org/legal/epl-v10.html
+ * Licensed under the Apache License, Version 2.0 (the "License"); 
+ * you may not use this file except in compliance with the License. 
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, 
+ * software distributed under the License is distributed on an "AS IS" BASIS, 
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+ * See the License for the specific language governing permissions and limitations 
+ * under the License.
  */
 
 package com.ibm.gaiandb.policy;
@@ -17,11 +26,7 @@ import org.apache.derby.iapi.types.DataValueDescriptor;
 
 
 /**
- * The purpose of this sample class is to help understand when each policy method is called by Gaian and what the purpose
- * of each method is - i.e. how it can be used to control the behaviour of a query.
- * 
- * The methods in this sample apply no filters - they just print a message to System.out for every invocation by Gaian. This helps 
- * to understand the query life-cycle in practice.
+ * Initial policy plugin for gaianDB, as part of the VirtualDataConnector project
  * 
  * To activate this policy class, you first need to add this class to Gaian's classpath.
  * You can do this in several ways:
@@ -32,21 +37,19 @@ import org.apache.derby.iapi.types.DataValueDescriptor;
  * Finally, start the Gaian node and activate your policy - this can be done with the following SQL:
  * call setconfigproperty('SQL_RESULT_FILTER', 'policy.SamplePolicyNoFilters')
  * 
- * Thereafter, you should see the effects of the policy methods below when running queries.
- * 
- * @author drvyvyan
+ * @author jonesn@uk.ibm.com
  */
-public class SamplePolicyNoFilters extends SQLResultFilterX {
+public class RangerPolicyFilter extends SQLResultFilterX {
 
 //	Use PROPRIETARY notice if class contains a main() method, otherwise use COPYRIGHT notice.
-	public static final String COPYRIGHT_NOTICE = "(c) Copyright IBM Corp. 2014";
+	public static final String COPYRIGHT_NOTICE = "(c) Copyright IBM Corp. 2017";
 	
 	/**
 	 * Policy instantiation constructor - invoked for every new query.
 	 * This instance will be re-used if the calling GaianTable results from a PreparedStatement which is re-executed by the calling application. 
 	 */
-	public SamplePolicyNoFilters() {
-		System.out.println("\nEntered SamplePolicyNoFilters() constructor");"
+	public RangerPolicyFilter() {
+		System.out.println("\nEntered SamplePolicyNoFilters() constructor");
 	}
 	
 	public boolean setLogicalTable(String logicalTableName, ResultSetMetaData logicalTableResultSetMetaData) {
