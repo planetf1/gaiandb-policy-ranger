@@ -40,21 +40,21 @@ import org.apache.derby.iapi.types.DataValueDescriptor;
  * 
  * @author jonesn@uk.ibm.com
  */
-public class RangerPolicyFilter extends SQLResultFilterX {
+public class RangerPolicyResultFilter extends SQLResultFilterX {
 
     //	Use PROPRIETARY notice if class contains a main() method, otherwise use COPYRIGHT notice.
 	public static final String COPYRIGHT_NOTICE = "(c) Copyright IBM Corp. 2017";
 
 	// Initialize gaianDB logging
-	private static final Logger logger = new Logger( "RangerPolicyFilter", 25 );
+	private static final Logger logger = new Logger( "RangerPolicyResultFilter", 25 );
 	
 	/**
 	 * Policy instantiation constructor - invoked for every new query.
 	 * This instance will be re-used if the calling GaianTable results from a PreparedStatement which is re-executed by the calling application. 
 	 */
-	public RangerPolicyFilter() {
-		logger.logDetail("\nEntered SamplePolicyNoFilters() constructor");
-		System.out.println("\nEntered SamplePolicyNoFilters() constructor **LOOK!!!**");
+	public RangerPolicyResultFilter() {
+		logger.logDetail("\nEntered RangerPolicyResultFilter() constructor");
+		System.out.println("\nEntered RangerPolicyResultFilter() constructor **LOOK!!!**");
 	}
 	
 	public boolean setLogicalTable(String logicalTableName, ResultSetMetaData logicalTableResultSetMetaData) {
