@@ -18,10 +18,12 @@ package com.ibm.gaiandb.policy;
 
 import com.ibm.gaiandb.Util;
 import com.ibm.gaiandb.Logger;
+import com.ibm.gaiandb.policyframework.SQLResultFilter;
 import com.ibm.gaiandb.policyframework.SQLResultFilterX;
 
 import java.sql.ResultSetMetaData;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.apache.derby.iapi.types.DataValueDescriptor;
 
@@ -40,6 +42,8 @@ import org.apache.derby.iapi.types.DataValueDescriptor;
  * 
  * @author jonesn@uk.ibm.com
  */
+
+// We could IMPLEMENT SQLResultFilter? but this alternate approach seems more favoured now
 public class RangerPolicyResultFilter extends SQLResultFilterX {
 
     //	Use PROPRIETARY notice if class contains a main() method, otherwise use COPYRIGHT notice.
@@ -54,7 +58,6 @@ public class RangerPolicyResultFilter extends SQLResultFilterX {
 	 */
 	public RangerPolicyResultFilter() {
 		logger.logDetail("\nEntered RangerPolicyResultFilter() constructor");
-		System.out.println("\nEntered RangerPolicyResultFilter() constructor **LOOK!!!**");
 	}
 	
 	public boolean setLogicalTable(String logicalTableName, ResultSetMetaData logicalTableResultSetMetaData) {
@@ -88,8 +91,25 @@ public class RangerPolicyResultFilter extends SQLResultFilterX {
 	 *  This is helpful if you need to send the rows to a 3rd party to evaluate policy - so you can minimize the number of round trips to it.
 	 */
 	public DataValueDescriptor[][] filterRowsBatch(String dataSourceID, DataValueDescriptor[][] rows) {
+
 		logger.logDetail("Entered filterRowsBatch(), dataSourceID: " + dataSourceID + ", number of rows: " + rows.length );
-		return rows; // no filtering - let all rows be returned as-is
+
+		// quick hack to randomly drop ros
+		// Quick test to randomly fail queries
+		Random randomGenerator = new Random();
+		int randomInt = randomGenerator.nextInt(100);
+		logger.logDetail("Random: " + randomInt);
+
+		if (randomInt>80)
+		{
+			logger.logDetail("filterRowsBatch: SIMULATED FAILURE" );
+
+			//emptyRows = new DataValueDescriptor()
+			return null;
+		}
+
+		else
+			return rows; // allow query to continue (i.e. accept this logical table)
 	}
 	
 	/**

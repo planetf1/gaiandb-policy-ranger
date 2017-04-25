@@ -22,7 +22,8 @@ import com.ibm.gaiandb.Logger;
 import com.ibm.gaiandb.policyframework.SQLQueryFilter;
 import java.util.Arrays;
 import org.apache.derby.iapi.types.DataValueDescriptor;
-import com.ibm.gaiandb.policyframework.SQLQueryElements; 
+import com.ibm.gaiandb.policyframework.SQLQueryElements;
+import java.util.Random;
 
 /*
  * Initial policy plugin for gaianDB, as part of the VirtualDataConnector project
@@ -48,10 +49,10 @@ import com.ibm.gaiandb.policyframework.SQLQueryElements;
 
 public class RangerPolicyQueryFilter implements SQLQueryFilter {
 
-	public static final String COPYRIGHT_NOTICE = "(c) Copyright IBM Corp. 2017";
+	public static final String COPYRIGHT_NOTICE = "(c) Copyright IBM Corp. 2017" ;
 
 	// Initialize gaianDB logging
-	private static final Logger logger = new Logger( "RangerQueryFilter", 25 );
+	private static final Logger logger = new Logger( "RangerPolicyQueryFilter", 25 );
 	
 	/**
 	 * Policy instantiation constructor - invoked for every new query.
@@ -59,14 +60,24 @@ public class RangerPolicyQueryFilter implements SQLQueryFilter {
 	 */
 	public RangerPolicyQueryFilter() {
 		logger.logDetail("\nEntered RangerPolicyQueryFilter() constructor");
-		System.out.println("\nEntered RangerPolicyQueryFilter() constructor **LOOK!!!**");
 	}
 	
 	// Note: originalSQL encompasses more than the query. It may describe a join on multiple logical tables including the one here.
 	public boolean applyIncomingSQLFilter( String queryID, String logicalTable, ResultSetMetaData logicalTableMetaData, String originalSQL, SQLQueryElements queryElmts )
 	{
 		logger.logDetail("Entered ApplyIncomingSQLFilter(), queryID: " + queryID + ", logicalTable: " + logicalTable + ", originalSQL: " + originalSQL);
-		return true; // allow query to continue (i.e. accept this logical table)
+
+		// Quick test to randomly fail queries
+		Random randomGenerator = new Random();
+		int randomInt = randomGenerator.nextInt(100);
+		logger.logDetail("Random: " + randomInt);
+		if (randomInt>80) {
+			logger.logDetail("applyIncomingSQLFilter: SIMULATED FAILURE" );
+
+			return false;
+		}
+			else
+		    return true; // allow query to continue (i.e. accept this logical table)
 	}
 
 	public boolean applyPropagatedSQLFilter( String queryID, String nodeID, SQLQueryElements queryElmts )
