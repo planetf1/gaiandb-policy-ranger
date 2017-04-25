@@ -14,3 +14,4 @@ hs_err_pid*
 maven-status/
 target/
 dependency-reduced-pom.xml
+.idea/
