@@ -14,7 +14,7 @@
  * under the License.
  */
 
-package com.ibm.gaiandb.policy;
+package org.apache.ranger.services.gaiandb;
 
 import com.ibm.gaiandb.Util;
 import com.ibm.gaiandb.Logger;

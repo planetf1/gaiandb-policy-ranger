@@ -14,7 +14,7 @@
  * under the License.
  */
 
-package com.ibm.gaiandb.policy;
+package org.apache.ranger.services.gaiandb;
 
 import java.sql.ResultSetMetaData;
 import com.ibm.gaiandb.Util;
