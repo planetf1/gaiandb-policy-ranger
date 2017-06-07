@@ -4,16 +4,16 @@
   "implClass": "org.apache.ranger.services.gaiandb.RangerServiceGaian",
   "label": "Gaian",
   "description": "Gaian",
-  "guid": "3e1afb5a-184a-4e82-9d9c-87a5cacc243c",
-  "resources":
-  [
+  "guid": "86d10748-e4fc-442b-8991-f6a727054ece",
+
+
     {
       "itemId": 1,
-      "name": "database",
+      "name": "schema",
       "type": "string",
       "level": 10,
       "parent": "",
-      "mandatory": true,
+      "mandatory": false,
       "lookupSupported": true,
       "recursiveSupported": false,
       "excludesSupported": true,
@@ -22,17 +22,16 @@
       "validationRegEx":"",
       "validationMessage": "",
       "uiHint":"",
-      "label": "Hive Database",
-      "description": "Hive Database"
+      "label": "Gaian Schema",
+      "description": "Gaian virtual Schema"
     },
-
     {
       "itemId": 2,
       "name": "table",
       "type": "string",
       "level": 20,
-      "parent": "database",
-      "mandatory": true,
+      "parent": "schema",
+      "mandatory": false,
       "lookupSupported": true,
       "recursiveSupported": false,
       "excludesSupported": true,
@@ -41,36 +40,18 @@
       "validationRegEx":"",
       "validationMessage": "",
       "uiHint":"",
-      "label": "Hive Table",
-      "description": "Hive Table"
-    },
+      "label": "Gaian Table",
+      "description": "Gaian virtual Table"
+      },
+
 
     {
       "itemId": 3,
-      "name": "udf",
-      "type": "string",
-      "level": 20,
-      "parent": "database",
-      "mandatory": true,
-      "lookupSupported": true,
-      "recursiveSupported": false,
-      "excludesSupported": true,
-      "matcher": "org.apache.ranger.plugin.resourcematcher.RangerDefaultResourceMatcher",
-      "matcherOptions": { "wildCard":true, "ignoreCase":true },
-      "validationRegEx":"",
-      "validationMessage": "",
-      "uiHint":"",
-      "label": "Hive UDF",
-      "description": "Hive UDF"
-    },
-
-    {
-      "itemId": 4,
       "name": "column",
       "type": "string",
       "level": 30,
       "parent": "table",
-      "mandatory": true,
+      "mandatory": false,
       "lookupSupported": true,
       "recursiveSupported": false,
       "excludesSupported": true,
@@ -79,8 +60,8 @@
       "validationRegEx":"",
       "validationMessage": "",
       "uiHint":"",
-      "label": "Hive Column",
-      "description": "Hive Column"
+      "label": "Gaian Column",
+      "description": "Gaian virtual Column"
     }
   ],
 
@@ -92,70 +73,20 @@
       "label": "select"
     },
 
-    {
-      "itemId": 2,
-      "name": "update",
-      "label": "update"
-    },
 
-    {
-      "itemId": 3,
-      "name": "create",
-      "label": "Create"
-    },
-
-    {
-      "itemId": 4,
-      "name": "drop",
-      "label": "Drop"
-    },
-
-    {
-      "itemId": 5,
-      "name": "alter",
-      "label": "Alter"
-    },
-
-    {
-      "itemId": 6,
-      "name": "index",
-      "label": "Index"
-    },
-
-    {
-      "itemId": 7,
-      "name": "lock",
-      "label": "Lock"
-    },
-
-    {
-      "itemId": 8,
-      "name": "all",
-      "label": "All",
-      "impliedGrants":
-      [
-        "select",
-        "update",
-        "create",
-        "drop",
-        "alter",
-        "index",
-        "lock"
-      ]
-    }
   ],
 
   "configs":
   [
     {
       "itemId": 1,
-      "name": "username",
+      "name": "classificationSupertype",
       "type": "string",
       "mandatory": true,
       "validationRegEx":"",
       "validationMessage": "",
       "uiHint":"",
-      "label": "Username"
+      "label": "classification root"
     },
 
     {
@@ -290,19 +221,7 @@
         "label": "Unmasked (retain original value)",
         "description": "No masking"
       },
-      {
-        "itemId": 12,
-        "name": "MASK_DATE_SHOW_YEAR",
-        "label": "Date: show only year",
-        "description": "Date: show only year",
-        "transformer": "mask({col}, 'x', 'x', 'x', -1, '1', 1, 0, -1)"
-      },
-      {
-        "itemId": 13,
-        "name": "CUSTOM",
-        "label": "Custom",
-        "description": "Custom"
-      }
+
     ]
   },
   "rowFilterDef": {
