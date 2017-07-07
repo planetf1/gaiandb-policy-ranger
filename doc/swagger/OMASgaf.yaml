@@ -1,0 +1,647 @@
+swagger: '2.0'
+info:
+  version: "0.1"
+  title: Apache Atlas Governance Action OMAS
+  description: >
+    The Atlas OMAS interfaces are a subset of the Apache Atlas API designed as consumer-centric ie for a particular purpose such as security enforcement, glossary management, asset information etc. They sit at a higher level than the OMRS interfaces which are oriented around basic types and entities. 
+    
+    
+    This document covers the Governance Action (or GAF) OMAS.   
+    
+    
+    See ATLAS-1696 for further information on the GAF. Additionally ATLAS-1095 documents the Open Connector Framework, which has the first outlining of what OMAS APIs should look like including typical errors and scoping parameters.
+    
+    
+    Primarily this interface will be used by Apache Ranger & similar enforcement engines to apply govenance to data accesses as dictated by metadata stored in Atlas.
+    
+    
+    Specifically in the case of ranger, the tagsync & other sync processes are the primary target
+    
+    
+    Also bear in mind this swagger is a proposal... as APIs get implemented it's likely swagger docs will then be generated directly from the implementation as is the case for existing Atlas APIs today which can be found at https://atlas.incubator.apache.org/api/v2/index.html
+    
+    
+    The APIs fall into a few groups:
+     - those dealing with classifications - this builds on the updates in Atlas to the data model, and classifications, glossary & relationships. The objective is to make it easier for Apache Ranger, or other enforcement technologies, to get the metadata they need
+     - those dealing with Policies & enforcement engines. There is a lot of context around policies in atlas as it's a key part of the definition of a governance programme. Rules are the technical artifacts that aid in enforcing a policy and are typically defined in an enforcement engine. However somehow the rules and policies need to be linked. We may be able to create template policies directly from definitions in atlas, whilst in other cases we want to find out more about what HAS been defined in say Ranger, and pull this into Atlas where a stewardship process can link it up for audit reporting and compliance validation.
+     - those dealing with Roles. This does require some further work, but the thought is that we can scope what user roles ranger needs to pull based on metadata we have in atlas around policies
+    
+    
+    **Kafka messages**
+    
+    
+    Topic  ATLAS_OMAS_GAF
+      -   a single Kafka topic will be used for all notifications sent by GAF OMAS.
+    
+    
+    These events will include CRUD notifications for the entities available through this API including
+     - Classifications (Note here we are primarily not interested in the classifications themselves, nor all entities but rather the specific association of a classification and entity - or the removal of that association)
+     - Roles
+     - Rules (consider these templates upon which executable ranger rules may be built or relate to)
+    
+    
+    Specific events
+    
+      - ROLE_CREATED (roleid, rolename) - this is omas level not omrs. used by user sync process
+      - RULE_CREATED - this is needed for rule sync (flattened)
+      - .... more to follow
+      
+      
+      Note that these messages will be triggered by changes in the underlying metadata repository, as learnt by listening to OMRS level kafka evenets
+      
+      TODO: Consider representing the Kafka notifications via a "fake" REST API so that the payload can be documented
+    
+# ---  
+# --- Standard owner/license information
+# ---
+  contact:
+    name: Nigel Jones
+    email: jonesn@uk.ibm.com
+  license:
+    name: Licensed under the Apache 2.0 license
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  
+    
+# ---
+# Grouping of our api into useful areas - purely for readability
+# ---
+    
+tags:
+- name: classification
+  description: >
+    These APIs return classification (or tag) based information to an enforcement endpoint such as ranger similarly to how Atlas/Ranger work today. 
+    
+    
+    They will be used by an updated version of Ranger TagSync, and other enforcement engines. 
+- name: rules
+  description: FUTURE - come back later!  These APIs return template policies that should be implemented by the enforcement technology such as ranger. 
+- name: roles
+  description: >
+    FUTURE - Come back later! 
+  
+    These APIs return information about the roles  understood by Atlas. Whilst the definitive source of users and groups/roles will most likely be in LDAP, and an engine such as ranger will get authoritative definitions from there, these APIs can be used to discover what roles are relevant to Atlas and aid in scoping what roles are relevant for enforcement engines
+- name: engine
+  description: FUTURE - Come back later! 
+    These APIs are for capturing metadata about the enforcement points
+
+# ---
+# Start of API definitions
+# ---
+ 
+paths:
+
+  # --
+  # Start of our APIs for tags (classifications)
+  #
+  # 4 July - this API currently returns both tag definitions AND instances/assets. This mirrors what ranger needs. However
+  #          it seems more logical to split into 2 calls a) definitions b) instances/assets since the rate of change of each differs.
+  #          Tags update only infrequently, but instance values/assets more frequently. Whilst updates are most likely handled by
+  #          messages the logical seperation seems to make sense, and also would be clearer to understand
+  #          for now the "original" getTags will be called XXX (tbd)
+  # ---
+  /v2/gaf/tags:
+  
+  # Common parameters that will feature on all the operations under this path
+  # (Aside: in retrospect many of these are only for queries, though as this
+  # entire API is R/O for now this shouldn't be an issue.......)
+
+   
+    get:
+      tags:
+        - classification
+      summary: Get classifications
+      description: This will get a  list of classifications ie associations between assets and classifiers. This is a flattened version of the structure navigable through the Glossary OMAS since we are focussed only on the classification of a resource. That classification will follow through structural relationships (ie table->column) and term relationships. Note this is probably more cumbersome than seperate apis for definitions and instances
+      operationId: getTags
+      parameters:
+      - $ref: '#/parameters/metadataConnection'
+      - $ref: '#/parameters/Zone'
+      - $ref: '#/parameters/Locale'
+      - $ref: '#/parameters/Namespace'
+      - $ref: '#/parameters/tenant'
+      - $ref: '#/parameters/glossary'
+      - $ref: '#/parameters/asofquery'
+      # Only classifications with a defined supertype
+      # ie just governance classifications
+      - $ref: '#/parameters/rootTypeNames'
+      # And of course for pagination
+      - $ref: '#/parameters/PageLimit'
+      - $ref: '#/parameters/PageNumber'
+      #parameters:
+        # included in common section above - add unique parms here
+        # - $ref: '#/parameters/PageLimit'
+        #- $ref: '#/parameters/PageNumber'
+      responses:
+        200:
+          description: "OK. Returns a list of classifications"
+          schema:
+            $ref: "#/definitions/AssetClassifications"
+        404:
+          $ref: '#/responses/404Error'
+        401:
+          $ref: '#/responses/401Error'
+        503:
+          $ref: '#/responses/503Error'
+          
+          
+    # -- Lighter API that retrieve just the tag definitions, not the related resources or classification instance info
+    
+  /v2/gaf/tags/tagdefs:
+     get:
+      tags:
+        - classification
+      summary: Get classification definitions
+      description: This will get a  list of classification definitions - the name of a classification, id, and attributes
+      operationId: getTagDefs
+      parameters:
+      - $ref: '#/parameters/metadataConnection'
+      - $ref: '#/parameters/Zone'
+      - $ref: '#/parameters/Locale'
+      - $ref: '#/parameters/Namespace'
+      - $ref: '#/parameters/tenant'
+      - $ref: '#/parameters/glossary'
+      - $ref: '#/parameters/asofquery'
+      # Only classifications with a defined supertype
+      # ie just governance classifications
+      - $ref: '#/parameters/rootTypeNames'
+      # And of course for pagination
+      - $ref: '#/parameters/PageLimit'
+      - $ref: '#/parameters/PageNumber'
+      #parameters:
+        # included in common section above - add unique parms here
+        # - $ref: '#/parameters/PageLimit'
+        #- $ref: '#/parameters/PageNumber'
+      responses:
+        200:
+          description: "OK. Returns a list of classifications"
+          schema:
+            $ref: "#/definitions/Classifiers"
+        404:
+          $ref: '#/responses/404Error'
+        401:
+          $ref: '#/responses/401Error'
+        503:
+          $ref: '#/responses/503Error'
+          
+    # This API returns the instance values for the classifications without their definitions. Note that names, and definitions
+    # could have changed.
+  /v2/gaf/tags/tagvalues:
+     get:
+      tags:
+        - classification
+      summary: Get classification definitions
+      description: This will get a  list of classification values
+      operationId: getTagValues
+      parameters:
+      - $ref: '#/parameters/metadataConnection'
+      - $ref: '#/parameters/Zone'
+      - $ref: '#/parameters/Locale'
+      - $ref: '#/parameters/Namespace'
+      - $ref: '#/parameters/tenant'
+      - $ref: '#/parameters/glossary'
+      - $ref: '#/parameters/asofquery'
+      # Only classifications with a defined supertype
+      # ie just governance classifications
+      - $ref: '#/parameters/rootTypeNames'
+      # And of course for pagination
+      - $ref: '#/parameters/PageLimit'
+      - $ref: '#/parameters/PageNumber'
+      #parameters:
+        # included in common section above - add unique parms here
+        # - $ref: '#/parameters/PageLimit'
+        #- $ref: '#/parameters/PageNumber'
+      responses:
+        200:
+          description: "OK. Returns a list of classifications"
+          schema:
+            $ref: "#/definitions/Classifiers"
+        404:
+          $ref: '#/responses/404Error'
+        401:
+          $ref: '#/responses/401Error'
+        503:
+          $ref: '#/responses/503Error'
+    
+    
+    #
+ # ---This API is for returning the list of roles that atlas knows about
+  /v2/gaf/roles:
+    parameters:
+      - $ref: '#/parameters/metadataConnection'
+      - $ref: '#/parameters/Zone'
+      - $ref: '#/parameters/Locale'
+      - $ref: '#/parameters/Namespace'
+      - $ref: '#/parameters/tenant'
+      - $ref: '#/parameters/glossary'
+      - $ref: '#/parameters/asofquery'
+      # And of course for pagination
+      - $ref: '#/parameters/PageLimit'
+      - $ref: '#/parameters/PageNumber'
+    get:
+      tags:
+        - roles
+      summary: Get list of roles assigned to Atlas entities
+      description: This will get a  list of roles assigned to entities in Atlas. These role names should be the same as those used in the corporate LDAP server so that user/role associations can be retrieved to support enforcement technologies such as Apache Ranger
+      operationId: getRoles
+      #parameters:
+      responses:
+        200:
+          description: "OK. Returns a list of roles"
+          schema:
+            $ref: "#/definitions/Roles"
+        404:
+          $ref: '#/responses/404Error'
+        401:
+          $ref: '#/responses/401Error'
+        503:
+          $ref: '#/responses/503Error'
+          
+          
+  # ---
+  # Now our APIs for RULES 
+  #
+  # This is an area that still needs review. Orignally we thought we could consistently 
+  # generate rules from atlas. Instead it may be we define policies in atlas and the
+  # link to rules implemented in ranger
+  # ---
+  
+  /v2/gaf/rules:
+    parameters:
+      - $ref: '#/parameters/metadataConnection'
+      - $ref: '#/parameters/Zone'
+      - $ref: '#/parameters/Locale'
+      - $ref: '#/parameters/Namespace'
+      - $ref: '#/parameters/tenant'
+      - $ref: '#/parameters/glossary'
+      - $ref: '#/parameters/asofquery'
+      # And of course for pagination
+      - $ref: '#/parameters/PageLimit'
+      - $ref: '#/parameters/PageNumber'
+    get:
+      tags:
+        - rules
+      summary: Get all rules
+      description: This will get a list all rules 
+      operationId: getRules
+      #parameters:
+      responses:
+        200:
+          description: "OK. Returns a list of rules"
+          schema:
+            $ref: "#/definitions/Rules"
+        404:
+          $ref: '#/responses/404Error'
+        401:
+          $ref: '#/responses/401Error'
+        503:
+          $ref: '#/responses/503Error'
+  
+#
+# --- Ranger can post information about what it's managing
+ 
+  /v2/gaf/setEnforcementMetadata:
+
+    post:
+      tags:
+        - engine
+
+      summary: Add enforcement engine metadata
+      description: This will submit information about the enforcement engine to atlas
+      operationId: setEnforcementMetadata
+      
+      # Our queries mostly use parameters in the URL. For updates we'll place the 
+      # content in the body
+      parameters: [
+      {
+        "in": "body",
+        "name": "body",
+        "description": "enforcement engine metadata object",
+        "required": true,
+        "schema": {
+          "$ref": "#/definitions/engineMetadata"
+        }
+      }
+      ]
+
+      responses:
+        200:
+          description: "OK. Submitted"
+        404:
+          $ref: '#/responses/404Error'
+        401:
+          $ref: '#/responses/401Error'
+        503:
+          $ref: '#/responses/503Error'
+          
+          
+
+  
+# ---
+# RE-ENABLE this for API mocking when needed
+#
+# ---
+# This is for test support
+# ---
+# Added by API Auto Mocking Plugin
+#host: virtserver.swaggerhub.com
+#basePath: /planetf1/GovernanceActionOMAS/0.1
+#schemes:
+#- https
+#consumes:
+#  - application/json
+#produces:
+#  - application/json
+
+#---
+#--- Reusable objects for request and response
+# -- note for most a plural form ie array of objects for a result set
+#---
+definitions:
+  Classifier:
+    type: object
+    description: A classifier - for example "Confidentiality".
+    properties:
+      name:
+        type: string
+      guid:
+        type: string
+        description: This guid can be used to retrieve further information on the definition of a classifier using other Atlas APIs
+      attributes:
+        $ref: '#/definitions/ClassifierAttributeDefs'
+  # -- not currently used
+  Classifiers: 
+    type: array
+    items: 
+        $ref: '#/definitions/Classifier'
+      
+  Asset:
+    properties:
+      name: 
+        type: string
+        description: Label that could be displayed on-screen, for example in the Ranger UI
+      guid:
+        description: Unique identifier to assist in understanding lineage 
+        type: string
+  # -- not currently used
+  #Entities: 
+  #  type: array
+  #  items: 
+  #      $ref: '#/definitions/Entity'
+      
+  ClassificationValue:
+    properties:
+      key: 
+        type: string
+        description: "key"
+      value:
+        type: string
+        description: "value"
+        
+  AssetClassification:
+    properties:
+      classifiedAsset:
+        $ref: "#/definitions/Asset"
+      classifier:
+        $ref: "#/definitions/Classifier"
+      classificationValues:
+          type: array
+          description: Array of key/value pairs
+          items:
+            $ref: '#/definitions/ClassificationValue'
+      guid:
+        type: string
+        description: guid for classification
+  AssetClassifications: 
+      type: array
+      description: An array of returned classifications
+      items: 
+        $ref: '#/definitions/AssetClassification'
+        
+  # definition for attributes of a classifier
+  ClassifierAttributeDef:
+    properties:
+      key: 
+        type: string
+        description: "key"
+      value:
+        type: string
+        description: "type"
+  ClassifierAttributeDefs:
+          type: array
+          description: Array of key/type pairs
+          items:
+            $ref: '#/definitions/ClassifierAttributeDef'        
+# ---
+# ROLES
+# ---
+  Role:
+    properties:
+      roleName: 
+        type: string
+        description: Role Name (as in LDAP)
+      guid:
+        description: Unique identifier to assist in understanding lineage 
+        type: string
+  Roles: 
+      type: array
+      description: An array of returned roles
+      items: 
+        $ref: '#/definitions/Role'   
+  Rule:
+    properties:
+      name: 
+        type: string
+        description: Rule Name 
+      description:
+        type: string
+        description: description
+      condition:
+        type: string
+        description: Condition to be evaluated (format needs discussion - needs to include role, asset perhaps more)
+      action:
+        type: string
+        description: Action to be formed ie permit, deny, mask, log (needs discussion - will need additional parameters like mask type. May need to specify pre vs post)
+      guid:
+        description: Unique identifier to assist in understanding lineage 
+        type: string
+  Rules: 
+      type: array
+      description: An array of returned rules
+      items: 
+        $ref: '#/definitions/Rule'     
+  # --- Additional types for engine to submit metadata to atlas
+  engineMetadata: {
+    type: object,
+    description: "Engine metadata",
+    required: ["engineTech","uniqueId"],
+    properties: {
+       engineTech: {type: string},
+       uniqueId: {type: string},
+       location: {type: string}
+    }
+    }          
+#---
+#--- Reusable parameters for input
+#---
+parameters:
+  PageLimit:
+    name: limit
+    in: query
+    type: integer
+    description: >
+      Limits the number of items on a page.
+    
+      _Currently only Search APIs include pagination. This API proposal suggests we include it in other APIs too_
+    
+  PageNumber:
+    name: offset
+    in: query
+    type: integer
+    description: >
+      Specifies the page number to be displayed.     
+      
+      _Currently only Search APIs include pagination. This API proposal suggests we include it in other APIs too_
+  serviceNames:
+    name: serviceNames
+    in: query
+    type: array
+    description: The servicename is defined in Atlas and allows policies to be scoped and used by different enforcement engines or endpoints
+    items:
+      type: string
+  rootTypeNames:
+    name: roottypeNames
+    in: query
+    type: array
+    description: The rootTypeName is the supertype of the classifications that the caller is interested in, for example security classification.
+    items:
+      type: string  
+  # ---
+  # OMAS Common Scope Parameters:
+  # Inspired by ATLAS-1095
+  # ---
+  metadataConnection:
+    name: metadataConnection
+    in: query
+    type: string
+    description: Specifies the GUID of the connection to the metadata store which is to be used for this request. If not set the default connection configured in OMAS properties will be used.
+  Zone:
+    name: Zone
+    in: query
+    type: string
+    description: Specifies the Governance zone. Acts as a scoping mechanism to only retrieve information about assets in this zone. This cannot be multi-valued. If not set assets in all zones will be retrieved.
+  Locale:
+    name: locale
+    in: query
+    type: string
+    description: Specifies the locale to be used for any translateable values. If not set the system locale as used by the metadata repository will be used.
+  Namespace:
+    name: namespace
+    in: query
+    type: string
+    description: Specifies the namespace GUID to be used. Only instances found in this namespace will be returned. As an example this could be used to choose whether to return development, staging, or production metadata. If not specified only the default namespace will be used, as defined by OMAS properties.
+  tenant:
+    name: tenant
+    in: query
+    type: string
+    description: Specifies the tenant GUID to be used. Only metadata relating to this tenant will be returned. If not specified only metadata for the default tenant as defined in OMAS properties will be used.
+  glossary:
+    name: glossary
+    in: query
+    type: string
+    description: Specifies the Glossary name to be used. Only business terms in this glossary will be considered when navigating between assets and classifications. For example we may only use a corporate glossary, or that of a specific business unit. It might also be used to handle different languages. If not specified, all glossaries will be considered.
+  asofquery:
+    name: asofquerytime
+    in: query
+    type: string
+    description: Specifies a point in time query. If not specified the current time is used. An enforcement engine will likely always use this, unless a comparison is needed between old and new to see what has changed, or to correlate the configuration of an enforcement engine with audit logs and reports for audit or debugging purposes.
+  # There are others but hard to see which ones make sense
+  #  name: OMAS scope
+  #  in: query
+  #  type: object
+  #    properties:
+  #      description: x
+  #
+  # ---
+  # Additional key-value pair (logging)
+  extraprops:
+    name: extraprops
+    in: query
+    type: string
+    description: specifies
+    
+ 
+
+
+#---
+#--- Reusable responses
+# ---
+# Since these are all scope criteria which for some reason can't be matched, we return a http error 404 - it's not that there's no search results (which would suggest a 2XX error) but rather it's a query for a specific object/set thereof .......
+
+# Note that if no objects meet the criteria passed, but the criteria is valid, a HTTP 200 
+# will be returned, but potentially with no objects
+responses:
+  404Error:
+    description: Not Found
+    schema:
+      type: object 
+      properties:
+        exception:
+          type: string
+          enum: [OMASUnknownConnection, 
+            OMASUnknownConnectorDirectory,
+            OMASUnknownMetadataRepositoryConnection,
+            OMASUnknownZone,
+            OMASUnknownGlossary,
+            OMASUnknownNamespace,
+            OMASUnknownTenant,
+            OMASNoCrystalBall,
+            unknown]
+          description: |
+            A discriminator indicating the cause of the resource not being found - for example due to bad scoping 
+        msgid:
+          type: string
+          description: Unique error message identifier
+        message:
+          type: string
+          description: Further information on the error
+  401Error:
+    description: Not authorized
+    schema:
+      type: object 
+      properties:
+        exception:
+          type: string
+          enum: [OMASUnauthorizedAccessToResource,
+            unknown]
+          description: |
+            A discriminator indicating the cause of the resource not being found -  for example due to bad scoping 
+            
+            
+        msgid:
+          type: string
+          description: Unique error message identifier
+        message:
+          type: string
+          description: Further information on the error
+  503Error:
+    description: ServiceUnavailable
+    schema:
+      type: object 
+      properties:
+        exception:
+          type: string
+          enum: [OMASResourceUnavailable,unknown]
+          description: |
+            A discriminator indicating the cause of the resource not being found - for example due to bad scoping 
+            
+          
+        msgid:
+          type: string
+          description: Unique error message identifier
+        message:
+          type: string
+          description: Further information on the error
+# Added by API Auto Mocking Plugin
+host: virtserver.swaggerhub.com
+basePath: /planetf1/GovernanceActionOMAS/0.1
+schemes:
+ - https
