@@ -35,7 +35,7 @@ public class ProxyUserAuthenticator implements UserAuthenticator {
             // force automatic creation of schema
             info.setProperty("create","true");
 
-            res = basAuth.authenticateUser(proxyUID, proxyPwd, dbName, new Properties());
+            res = basAuth.authenticateUser(proxyUID, proxyPwd, dbName, info);
 
         }
 
@@ -44,7 +44,7 @@ public class ProxyUserAuthenticator implements UserAuthenticator {
         // straight pass through - no need to manipulate properties
         if (!res) {
             logger.logInfo("Performing regular authentication for user:" + userName);
-            res = basAuth.authenticateUser(userName, passwordOrSid, dbName, new Properties());  // drop back to Basic if no asserted id
+            res = basAuth.authenticateUser(userName, passwordOrSid, dbName, info);  // drop back to Basic if no asserted id
         }
         return res;
     }
