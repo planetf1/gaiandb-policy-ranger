@@ -32,7 +32,11 @@ public class ProxyUserAuthenticator implements UserAuthenticator {
             // there are no additional checks to control if this user has privileges to perform escalation
             logger.logInfo("Performing proxy authentication with user:"+proxyUID+" on behalf of:" + userName);
 
+            // force automatic creation of schema
+            info.setProperty("create","true");
+
             res = basAuth.authenticateUser(proxyUID, proxyPwd, dbName, new Properties());
+
         }
 
 
